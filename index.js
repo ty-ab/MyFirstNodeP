@@ -1,31 +1,39 @@
-const express = require('express')
-const {n} = require('./custom_module/cmodule')
-const os = require('os')
-const path = require('path')
-const fileSystem = require('fs')
-const tapp = express()
-const port = 3000
+const express = require("express");
+const { n } = require("./custom_module/cmodule");
+const { createServer } = require("http");
+const { Server } = require("socket.io");
 
-tapp.get('/',(req, res) => {
-    res.send(n.name)
-})
-//const msg = fileSystem.readFileSync('./content/content.txt','utf-8')
-//const rmesg = fileSystem.writeFileSync('./content/content-1.txt',`newly written file, added: ${msg}`)
-//console.log(`reading file :- ${msg}`,{flag : 'a'})
-fileSystem.readFile('./content/content.tt','utf-8', (err, result) => {
-    if (err) {
-        console.log(err.message)
-        return
-    }
-    console.log(result)
-})
+const tapp = express();
+const server = createServer(tapp);
+const port = 3000;
+const io = new Server(server);
 
+//tapp.use(express.static(__dirname + "public"));
 
-//console.log(`sys ${os.uptime}`)
-//console.log(`this is path module ${path.sep}`)
-//const crt = path.join(__dirname,'/content',"sub",'content.txt')
-//console.log(`this is ${crt}`)
-//console.log(`this is ${crt}`)
-tapp.listen(port, () => {
-    console.log(`tApp listenig on the port ${port}`)
-})
+tapp.get("/", (req, res) => {
+  res.sendFile(__dirname + "/index.html");
+});
+tapp.get("/io", (req, res) => {
+  res.sendFile(__dirname + "/public/socket.io.js");
+});
+io.on("connection", function (socket) {
+  console.log("a user connectes")
+  socket.on('disconnect', () => {
+    console.log('user disconnected');
+  })
+
+  socket.on('chat message', (msg) => {
+    console.log('message: ' + msg);
+  })
+
+});
+
+io.on('connection', (socket) => {
+    socket.on('chat message', (msg) => {
+      io.emit('chat message', msg);
+    });
+  })
+
+server.listen(port, function () {
+  console.log(`Listening on port: ${port}`);
+});
